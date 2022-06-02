@@ -1,0 +1,32 @@
+FROM golang:1.16
+
+
+ENV GO111MODULE=on
+ENV GOOS=linux
+ENV GOARCH=amd64
+
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o app .
+
+ENV APP_HOME "/foss"
+WORKDIR "$APP_HOME"
+RUN mkdir -p "$APP_HOME/app"
+
+COPY app "$APP_HOME/app"
+COPY go.mod "$APP_HOME"
+RUN go mod download
+
+RUN cd "$APP_HOME/app" &&  go build ./main.go
+RUN echo ls -al
+RUN tar -czvf "FossApp.tar.gz" $APP_HOME
+
+FROM nginx:latest as packager
+WORKDIR /resources
+COPY resources /resources
+RUN tar -czvf "FossApp.tar.gz" /resources
+
+FROM scratch as runtime
+COPY --from=build /foss/app /
+COPY --from=packager /resources/"FossApp.tar.gz" /resources
+
+EXPOSE 8081/tcp
+ENTRYPOINT ["./app/main"]

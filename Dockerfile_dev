@@ -1,0 +1,29 @@
+FROM golang as builder
+
+ENV GOPATH /go
+ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
+
+ENV APP_HOME=/foss
+WORKDIR $APP_HOME
+
+COPY app $APP_HOME/app
+COPY resources $APP_HOME/resources
+COPY go.mod $APP_HOME
+
+#RUN go get github.com/go-delve/delve/cmd/dlv
+RUN cd $APP_HOME/app && go build -o /foss/app
+
+# deployment image
+FROM scratch
+
+# copy ca-certificates from builder
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+
+# Final stage
+FROM debian:buster
+EXPOSE 8083 2345
+
+WORKDIR /apps/
+COPY go/bin /apps/
+COPY --from=builder /foss/app /apps/
+CMD ["/apps/dlv", "--listen=:2345", "--headless=true", "--api-version=2", "--accept-multiclient", "exec", "/apps/app"]

@@ -1,0 +1,26 @@
+FROM golang:1.16 as builder
+
+RUN go get github.com/go-delve/delve/cmd/dlv
+RUN go get github.com/sirupsen/logrus
+
+ENV APP_HOME=/foss
+WORKDIR $APP_HOME/app
+
+COPY app $APP_HOME/app
+COPY go.mod $APP_HOME
+
+RUN go mod download
+RUN go build -gcflags="all=-N -l" -o $APP_HOME/app
+
+
+# Final stage
+FROM debian:buster
+EXPOSE 8083 2345
+
+FROM scratch as prod
+WORKDIR /
+#COPY --from=builder /go/bin/dlv /
+ENV APP_HOME=/foss
+COPY --from=builder /$APP_HOME/app /
+CMD [ "./app" ]
+#CMD ["/dlv", "--listen=:2345", "--headless=true", "--api-version=2", "--accept-multiclient", "exec", "/app"]

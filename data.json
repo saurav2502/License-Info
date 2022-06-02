@@ -1,0 +1,25 @@
+{
+ "appInfo": [
+  {
+   "appId": "FossApp-Inst",
+   "appName": "FossApp",
+   "fileName": "",
+   "fileVersion": "1.0",
+   "licenseData": "Hello storing this info inside storage"
+  },
+  {
+   "appId": "EvRatio-Inst",
+   "appName": "Ev Ratio",
+   "fileName": "",
+   "fileVersion": "1.0",
+   "licenseData": "Hello storing EvRatio info inside storage"
+  },
+  {
+   "appId": "Jio-Inst",
+   "appName": "Jio",
+   "fileName": "",
+   "fileVersion": "1.0",
+   "licenseData": "Hello storing Jio info inside storage"
+  }
+ ]
+}
