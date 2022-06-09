@@ -1,17 +1,17 @@
-FROM golang as builder
+FROM golang:1.17 as builder
 
-ENV GOPATH /go
-ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
+# Build Delve
+RUN go install github.com/go-delve/delve/cmd/dlv@latest
 
-ENV APP_HOME=/foss
+ENV APP_HOME=/foss/src/app
 WORKDIR $APP_HOME
 
-COPY app $APP_HOME/app
+ADD app $APP_HOME
 COPY resources $APP_HOME/resources
-COPY go.mod $APP_HOME
+COPY go.mod /foss/src
 
 #RUN go get github.com/go-delve/delve/cmd/dlv
-RUN cd $APP_HOME/app && go build -o /foss/app
+RUN go build -gcflags "all=-N -l" -o $APP_HOME
 
 # deployment image
 FROM scratch
@@ -24,6 +24,6 @@ FROM debian:buster
 EXPOSE 8083 2345
 
 WORKDIR /apps/
-COPY go/bin /apps/
-COPY --from=builder /foss/app /apps/
+COPY --from=builder /go/bin/dlv /apps/
+COPY --from=builder /foss/src/app/ /apps/
 CMD ["/apps/dlv", "--listen=:2345", "--headless=true", "--api-version=2", "--accept-multiclient", "exec", "/apps/app"]

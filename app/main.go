@@ -16,6 +16,7 @@ func main() {
 	http.HandleFunc("/store", service.HandleStore)
 	http.HandleFunc("/read", service.HandleRead)
 	http.HandleFunc("/", service.HandleDefault)
-	log.Print("container started from port")
+	http.HandleFunc("/login", service.HandleLogin)
+	log.Print("container started at port :8083")
 	log.Fatal(http.ListenAndServe(":8083", nil))
 }

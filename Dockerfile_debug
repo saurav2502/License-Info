@@ -1,7 +1,7 @@
-FROM golang:1.16 as builder
+FROM golang:1.17 as builder
 
-RUN go get github.com/go-delve/delve/cmd/dlv
-RUN go get github.com/sirupsen/logrus
+#RUN go get github.com/go-delve/delve/cmd/dlv
+#RUN go get github.com/sirupsen/logrus
 
 ENV APP_HOME=/foss
 WORKDIR $APP_HOME/app

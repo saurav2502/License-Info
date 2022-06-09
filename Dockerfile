@@ -3,7 +3,7 @@ RUN go install github.com/beego/bee/v2@latest
 
 ENV GO111MODULE=on
 
-RUN mkdir -p "foss/app"
+RUN mkdir -p "foss/app/usr/storage"
 WORKDIR /foss
 COPY app /foss/app
 COPY go.mod ./
@@ -24,6 +24,6 @@ FROM scratch as runtime
 COPY --from=build /foss/app /
 COPY --from=packager "FossApp.tar.gz" ./resources/
 
-EXPOSE 8081/tcp
+EXPOSE 8083/tcp
 CMD ["./main"]
 #ENTRYPOINT ["./main"]

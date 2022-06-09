@@ -4,17 +4,20 @@
 # Copyright (c)  by Saurav from 2022
 #
 
-APP_NAME=fossapp
-VERSION=v12
+APP_NAME=go-app
+VERSION=latest
 TAG=$APP_NAME":"$VERSION
 DOCKER_FILENAME=Dockerfile_dev
-HOST_PORT=8081
-CONTAINER_PORT=8081
+HOST_PORT=8083
+CONTAINER_PORT=8083
+DEBUGGER_PORT=2345
 
 #docker image rm $(docker images)
 docker build -t $TAG -f $DOCKER_FILENAME .
-docker run -it --rm -v go-vol:/var/opt/fossvol \
-  -dp $HOST_PORT:$CONTAINER_PORT \
-  --network go-network \
+docker run --rm -it -v go-vol:/usr/storage \
+  -d -p $HOST_PORT:$CONTAINER_PORT \
+  -p $DEBUGGER_PORT:$DEBUGGER_PORT \
+  -e APP_ADDRESS=java-app:8081 \
+  --network myapp \
   --name $APP_NAME \
   $TAG

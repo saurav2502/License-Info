@@ -6,7 +6,9 @@ package service
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"foss/app/constants"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -37,7 +39,7 @@ func HandleDefault(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-const DOCKER_PERSISTENT_DIR = "/resources"
+const DOCKER_PERSISTENT_DIR = "/usr/storage"
 
 //HandleStore to store json data to docker persistent memory
 func HandleStore(w http.ResponseWriter, r *http.Request) {
@@ -71,7 +73,26 @@ func HandleStore(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Print(err)
 	}
-	err = ioutil.WriteFile("data.json", file, 0644)
+	if _, err := os.Stat(DOCKER_PERSISTENT_DIR); errors.Is(err, os.ErrNotExist) {
+		err := os.Mkdir(DOCKER_PERSISTENT_DIR, os.ModePerm)
+		if err != nil {
+			log.Println(err)
+		}
+	}
+	if err != nil {
+		json.NewEncoder(w).Encode("error while creating file")
+	}
+	err = ioutil.WriteFile(DOCKER_PERSISTENT_DIR+"/data.json", file, 0644)
+
+	if _, err := os.Stat(DOCKER_PERSISTENT_DIR + "/data.json"); err == nil {
+		log.Printf("file exist %v", true)
+
+	} else if errors.Is(err, os.ErrNotExist) {
+		log.Printf("file exist %v", false)
+
+	} else {
+		log.Print("entered in else condition")
+	}
 	if err != nil {
 		log.Print(err)
 	}
@@ -114,19 +135,26 @@ func HandleStore(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandleRead(w http.ResponseWriter, r *http.Request) {
-	getwd, _ := os.Getwd()
-	log.Print(getwd)
-	jsonFile, err := os.Open(getwd + "/data.json")
+	//dir, _ := os.Getwd()
+	//log.Print(dir)
+	jsonFile, err := os.Open(DOCKER_PERSISTENT_DIR + "/data.json")
 	if err != nil {
-		fmt.Println(err)
+		json.NewEncoder(w).Encode("error while opening file")
 	}
-	defer jsonFile.Close()
 	byteValue, _ := ioutil.ReadAll(jsonFile)
-	fmt.Printf("data files as json %v", prettyJson(byteValue))
+	json.NewEncoder(w).Encode(string(byteValue))
+	/*fmt.Printf("data files as json %v", prettyJson(byteValue))
 	var apps Apps
-	json.Unmarshal(byteValue, &apps)
+	err = json.Unmarshal(byteValue, &apps)
+	if err != nil {
+		json.NewEncoder(w).Encode("error with unmarshing 1")
+	}
 	log.Print(apps)
-	json.NewEncoder(w).Encode(apps)
+	err = json.NewEncoder(w).Encode(apps)
+	if err != nil {
+		json.NewEncoder(w).Encode("error with unmarshing 2")
+	}
+	jsonFile.Close()*/
 }
 
 func prettyJson(app interface{}) interface{} {
@@ -135,5 +163,33 @@ func prettyJson(app interface{}) interface{} {
 		log.Print(err)
 	}
 	log.Printf("pretty string %v", marshal)
-	return marshal
+	return string(marshal)
+}
+
+//HandleLogin test container calls
+func HandleLogin(w http.ResponseWriter, r *http.Request) {
+	log.Print("GET :: HandleLogin")
+	baseUrl, ok := os.LookupEnv("APP_ADDRESS")
+	if !ok {
+		log.Print("Address not found")
+		_ = fmt.Sprintf("baseurl not found")
+	}
+	log.Printf("Api Req: %v", baseUrl+constants.AppUrl)
+	request, err := http.NewRequest(http.MethodGet, baseUrl+constants.AppUrl, nil)
+	if err != nil {
+		_ = fmt.Sprintf("preparing request error")
+	}
+	client := &http.Client{}
+	res, err := client.Do(request)
+	if err != nil || res == nil {
+		_ = fmt.Sprintf("response error")
+	}
+	bytes, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		_ = fmt.Sprintf("bytes conversion error with response")
+	}
+	err = json.NewEncoder(w).Encode(string(bytes))
+	if err != nil {
+		return
+	}
 }
